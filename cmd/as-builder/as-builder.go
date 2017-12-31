@@ -141,6 +141,10 @@ func executeCompilation(compilationDir, mainPath, assetsPath, outPath string) er
 		if err := exec.Command(goBinPath, []string{"get", "-u", "github.com/rakyll/statik"}...).Run(); err != nil {
 			return err
 		}
+		statikPath, err = exec.LookPath("statik")
+		if err != nil {
+			return err
+		}
 	}
 
 	statikArgs := []string{"-src", assetsPath, "-dest", compilationDir}
