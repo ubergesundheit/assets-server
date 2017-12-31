@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"go/build"
 	"io/ioutil"
@@ -10,14 +11,9 @@ import (
 	"path/filepath"
 )
 
-var outPath = "./assets-server"
-var assetsPath = "./public"
-var port = 8000
-var httpPath = "/"
+const tmpPackageName = "as-builder"
 
-var namePackage = "as-builder"
-
-var mainGoTemplate = `package main
+const mainGoTemplate = `package main
 
 import (
 	"log"
@@ -39,52 +35,113 @@ func main() {
 `
 
 func main() {
-	dir, err := ioutil.TempDir(filepath.Join(build.Default.GOPATH, "src"), namePackage)
-	if err != nil {
-		fmt.Println(err)
-		return
+	errs := checkDependencies()
+	if len(errs) != 0 {
+		fmt.Println("Error: Dependencies not met:")
+		for _, err := range errs {
+			fmt.Println(err)
+		}
+		os.Exit(1)
 	}
-	defer os.RemoveAll(dir)
+
+	assetsPath, binaryPath, urlPath, port := readFlags()
+
+	compilationDir, mainPath, err := createFiles(urlPath, port)
+	if err != nil {
+		fmt.Println("Error creating files:")
+		fmt.Println(err)
+		os.RemoveAll(compilationDir)
+		os.Exit(1)
+	}
+
+	if err = executeCompilation(compilationDir, mainPath, assetsPath, binaryPath); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func readFlags() (assetsPath, binaryPath, urlPath string, port int) {
+	const (
+		defaultAssetsPath = "./public"
+		defaultBinaryPath = "assets-server"
+		defaultURLPath    = "/"
+		defaultPort       = 8000
+		assetsPathUsage   = "file path of the assets directory"
+		binaryPathUsage   = "file path of the resulting binary"
+		urlPathUsage      = "URL path for the server"
+		portUsage         = "TCP port from which the server will be reachable"
+	)
+	// src flag
+	flag.StringVar(&assetsPath, "src", defaultAssetsPath, assetsPathUsage)
+	// output flag
+	flag.StringVar(&binaryPath, "dest", defaultBinaryPath, binaryPathUsage)
+	// url flag
+	flag.StringVar(&urlPath, "url", defaultURLPath, urlPathUsage)
+	// port flag
+	flag.IntVar(&port, "port", defaultPort, portUsage)
+
+	flag.Parse()
+	return assetsPath, binaryPath, urlPath, port
+}
+
+func checkDependencies() (errs []error) {
+	for _, dep := range []string{"go"} {
+		_, err := exec.LookPath(dep)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+func createFiles(urlPath string, port int) (string, string, error) {
+	compilationDir, err := ioutil.TempDir(filepath.Join(build.Default.GOPATH, "src"), tmpPackageName)
+	if err != nil {
+		return "", "", err
+	}
 
 	var qb bytes.Buffer
-	fmt.Fprintf(&qb, mainGoTemplate, httpPath, httpPath, port)
+	fmt.Fprintf(&qb, mainGoTemplate, urlPath, urlPath, port)
 
-	mainPath := filepath.Join(dir, "main.go")
+	mainPath := filepath.Join(compilationDir, "main.go")
 	if err := ioutil.WriteFile(mainPath, qb.Bytes(), 0644); err != nil {
-		fmt.Println(err)
-		return
+		return "", "", err
 	}
-
-	if err = runStatik(dir); err != nil {
-		fmt.Println(err)
-		return
-	}
-	if err = runGoCompile(dir, mainPath); err != nil {
-		fmt.Println(err)
-		return
-	}
+	return compilationDir, mainPath, nil
 }
 
-func runStatik(dir string) error {
-	cmd, err := exec.LookPath("statik")
+func executeCompilation(compilationDir, mainPath, assetsPath, outPath string) error {
+	// find the go path before the statik path
+	// in order to be able to use `go get` when statik is missing
+	goBinPath, err := exec.LookPath("go")
 	if err != nil {
 		return err
 	}
-	args := []string{"-src", assetsPath, "-dest", dir}
-	if err := exec.Command(cmd, args...).Run(); err != nil {
-		return err
-	}
-	return nil
-}
 
-func runGoCompile(dir, mainPath string) error {
-	cmd, err := exec.LookPath("go")
+	statikPath, err := exec.LookPath("statik")
 	if err != nil {
+		// if not found, install statik with `go get`
+		if err := exec.Command(goBinPath, []string{"get", "-u", "github.com/rakyll/statik"}...).Run(); err != nil {
+			return err
+		}
+	}
+
+	statikArgs := []string{"-src", assetsPath, "-dest", compilationDir}
+	if err := exec.Command(statikPath, statikArgs...).Run(); err != nil {
 		return err
 	}
-	args := []string{"build", "-o", outPath, "-a", "-tags", "netgo", "-ldflags", "-extldflags -static", mainPath}
 
-	command := exec.Command(cmd, args...)
+	buildArgs := []string{
+		"build",
+		"-a", // rebuild all
+		"-o", outPath,
+		"-tags", "netgo", // use go network implementaton
+		"-ldflags", "-extldflags -static",
+		mainPath,
+	}
+
+	command := exec.Command(goBinPath, buildArgs...)
 	command.Env = append(os.Environ(),
 		"CGO_ENABLED=0",
 	)
