@@ -12,6 +12,8 @@ Uses https://github.com/rakyll/statik
 
 ```
 Usage of as-builder:
+  -debug
+    enable verbose debug messages
   -dest string
     file path of the resulting binary (default "assets-server")
   -port int

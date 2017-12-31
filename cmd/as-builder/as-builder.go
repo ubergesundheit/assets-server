@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 const tmpPackageName = "as-builder"
@@ -34,6 +35,14 @@ func main() {
 }
 `
 
+var debugEnabled = false
+
+func debug(log interface{}) {
+	if debugEnabled == true {
+		fmt.Println(log)
+	}
+}
+
 func main() {
 	errs := checkDependencies()
 	if len(errs) != 0 {
@@ -56,8 +65,10 @@ func main() {
 
 	if err = executeCompilation(compilationDir, mainPath, assetsPath, binaryPath); err != nil {
 		fmt.Println(err)
+		os.RemoveAll(compilationDir)
 		os.Exit(1)
 	}
+	debug("done")
 }
 
 func readFlags() (assetsPath, binaryPath, urlPath string, port int) {
@@ -70,6 +81,7 @@ func readFlags() (assetsPath, binaryPath, urlPath string, port int) {
 		binaryPathUsage   = "file path of the resulting binary"
 		urlPathUsage      = "URL path for the server"
 		portUsage         = "TCP port from which the server will be reachable"
+		debugUsage        = "enable verbose debug messages"
 	)
 	// src flag
 	flag.StringVar(&assetsPath, "src", defaultAssetsPath, assetsPathUsage)
@@ -79,6 +91,8 @@ func readFlags() (assetsPath, binaryPath, urlPath string, port int) {
 	flag.StringVar(&urlPath, "url", defaultURLPath, urlPathUsage)
 	// port flag
 	flag.IntVar(&port, "port", defaultPort, portUsage)
+	// debug flag
+	flag.BoolVar(&debugEnabled, "debug", false, debugUsage)
 
 	flag.Parse()
 	return assetsPath, binaryPath, urlPath, port
@@ -100,6 +114,7 @@ func createFiles(urlPath string, port int) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+	debug("Compilation dir is " + compilationDir)
 
 	var qb bytes.Buffer
 	fmt.Fprintf(&qb, mainGoTemplate, urlPath, urlPath, port)
@@ -121,6 +136,7 @@ func executeCompilation(compilationDir, mainPath, assetsPath, outPath string) er
 
 	statikPath, err := exec.LookPath("statik")
 	if err != nil {
+		debug("statik not found, installing it with go get")
 		// if not found, install statik with `go get`
 		if err := exec.Command(goBinPath, []string{"get", "-u", "github.com/rakyll/statik"}...).Run(); err != nil {
 			return err
@@ -128,7 +144,9 @@ func executeCompilation(compilationDir, mainPath, assetsPath, outPath string) er
 	}
 
 	statikArgs := []string{"-src", assetsPath, "-dest", compilationDir}
-	if err := exec.Command(statikPath, statikArgs...).Run(); err != nil {
+	statikCmd := exec.Command(statikPath, statikArgs...)
+	debug("executing " + strings.Join(statikCmd.Args, " "))
+	if err := statikCmd.Run(); err != nil {
 		return err
 	}
 
@@ -146,6 +164,7 @@ func executeCompilation(compilationDir, mainPath, assetsPath, outPath string) er
 		"CGO_ENABLED=0",
 	)
 
+	debug("executing " + strings.Join(command.Args, " "))
 	if err = command.Run(); err != nil {
 		return err
 	}
