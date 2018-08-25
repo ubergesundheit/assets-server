@@ -3,7 +3,12 @@
 
 A tool to bundle a directory of files into a static HTTP server. Useful for serving html and js from Kubernetes Pods.
 
-Uses https://github.com/rakyll/statik
+Automatically adds .gz and .br compressed files and serves it to clients supporting gz or brotli thanks to https://github.com/lpar/gzipped.
+
+Uses
+- https://github.com/rakyll/statik
+- https://github.com/lpar/gzipped
+- https://github.com/google/brotli
 
 ## Use in a docker build stage
 
@@ -30,18 +35,31 @@ FROM scratch
 COPY --from=packer /assets-server /assets-server
 
 CMD ["/assets-server"]
-
 ```
 
-## Installation
+## Manual Installation
 
-    go get -u github.com/rakyll/statik
+Although possible, using the container image is recommended.
+You'll need some build dependencies for brotli. (On Ubuntu: build-essential, cmake)
+
+    go get -u github.com/rakyll/statik github.com/lpar/gzipped github.com/otiai10/copy
+    go get -u -d github.com/google/brotli/go/cbrotli
+    cd $GOPATH/src/github.com/google/brotli
+    mkdir out
+    cd out
+    ../configure-cmake --disable-debug
+    cmake ..
+    make -j8
+    make test
+    make install
     go get -u github.com/ubergesundheit/assets-server/cmd/as-builder
 
 ## Usage:
 
 ```
 Usage of as-builder:
+  -compress string
+    comma separated list of file extensions to compress. To completely disable compression specify an empty string (default ".html,.htm,.css,.js,.svg,.json,.txt,.xml,.yml,.yaml,.kml,.csv,.tsv,.webmanifest,.vtt,.vcard,.vcf,.ttc,.ttf,.rdf,.otf,.appcache,.md,.mdown,.m3u,.m3u8")
   -debug
     enable verbose debug messages
   -dest string

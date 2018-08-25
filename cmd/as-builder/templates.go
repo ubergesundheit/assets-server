@@ -11,6 +11,7 @@ import (
 	"time"
 
 	_ "./statik"
+	"github.com/lpar/gzipped"
 	"github.com/rakyll/statik/fs"
 )
 
@@ -24,7 +25,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         ":%[2]d",
-		Handler:      logging(logger)(http.FileServer(statikFS)),
+		Handler:      wrapper(logger)(gzipped.FileServer(statikFS)),
 		ErrorLog:     logger,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -57,7 +58,7 @@ func main() {
 	logger.Println("%[3]s stopped")
 }
 
-func logging(logger *log.Logger) func(http.Handler) http.Handler {
+func wrapper(logger *log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if %[4]t {
@@ -68,10 +69,12 @@ func logging(logger *log.Logger) func(http.Handler) http.Handler {
 					}
 					logger.Println(r.Method, r.URL.Path, remoteAddr, r.UserAgent())
 				}()
+				if r.URL.Path == "/" {
+					r.URL.Path = "/index.html"
+				}
 			}
 			next.ServeHTTP(w, r)
 		})
 	}
 }
-
 `
