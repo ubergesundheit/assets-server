@@ -22,7 +22,7 @@ func debug(log interface{}) {
 	}
 }
 
-func readFlags() (assetsPath, binaryPath, urlPath string, port int) {
+func readFlags() (assetsPath, binaryPath, urlPath string, port int, loggingEnabled bool) {
 	const (
 		defaultAssetsPath = "./public"
 		defaultBinaryPath = "assets-server"
@@ -33,6 +33,7 @@ func readFlags() (assetsPath, binaryPath, urlPath string, port int) {
 		urlPathUsage      = "URL path for the server"
 		portUsage         = "TCP port from which the server will be reachable"
 		debugUsage        = "enable verbose debug messages"
+		loggingUsage      = "enable request logging for the server"
 	)
 	// src flag
 	flag.StringVar(&assetsPath, "src", defaultAssetsPath, assetsPathUsage)
@@ -44,9 +45,11 @@ func readFlags() (assetsPath, binaryPath, urlPath string, port int) {
 	flag.IntVar(&port, "port", defaultPort, portUsage)
 	// debug flag
 	flag.BoolVar(&debugEnabled, "debug", false, debugUsage)
+	// logRequests flag
+	flag.BoolVar(&loggingEnabled, "logging", false, loggingUsage)
 
 	flag.Parse()
-	return assetsPath, binaryPath, urlPath, port
+	return assetsPath, binaryPath, urlPath, port, loggingEnabled
 }
 
 func checkDependencies() (errs []error) {
@@ -60,7 +63,7 @@ func checkDependencies() (errs []error) {
 	return errs
 }
 
-func createFiles(urlPath string, port int) (string, string, error) {
+func createFiles(urlPath, binaryName string, port int, loggingEnabled bool) (string, string, error) {
 	compilationDir, err := ioutil.TempDir(filepath.Join(build.Default.GOPATH, "src"), tmpPackageName)
 	if err != nil {
 		return "", "", err
@@ -76,7 +79,7 @@ func createFiles(urlPath string, port int) (string, string, error) {
 
 	w := bufio.NewWriter(f)
 
-	_, err = fmt.Fprintf(w, mainGoTemplate, urlPath, port)
+	_, err = fmt.Fprintf(w, mainGoTemplate, urlPath, port, binaryName, loggingEnabled)
 	if err != nil {
 		return "", "", err
 	}
@@ -108,6 +111,8 @@ func executeCompilation(compilationDir, mainPath, assetsPath, outPath string) er
 
 	statikArgs := []string{"-src", assetsPath, "-dest", compilationDir}
 	statikCmd := exec.Command(statikPath, statikArgs...)
+	statikCmd.Stdout = os.Stdout
+	statikCmd.Stderr = os.Stderr
 	debug("executing " + strings.Join(statikCmd.Args, " "))
 	if err := statikCmd.Run(); err != nil {
 		return err
@@ -126,6 +131,8 @@ func executeCompilation(compilationDir, mainPath, assetsPath, outPath string) er
 	command.Env = append(os.Environ(),
 		"CGO_ENABLED=0",
 	)
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
 
 	debug("executing " + strings.Join(command.Args, " "))
 	if err = command.Run(); err != nil {

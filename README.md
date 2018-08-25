@@ -46,6 +46,8 @@ Usage of as-builder:
     enable verbose debug messages
   -dest string
     file path of the resulting binary (default "assets-server")
+  -logging
+    enable request logging for the server
   -port int
     TCP port from which the server will be reachable (default 8000)
   -src string

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 )
 
 var exitCode = 1
@@ -21,9 +22,9 @@ func execute() int {
 		return 1
 	}
 
-	assetsPath, binaryPath, urlPath, port := readFlags()
+	assetsPath, binaryPath, urlPath, port, loggingEnabled := readFlags()
 
-	compilationDir, mainPath, err := createFiles(urlPath, port)
+	compilationDir, mainPath, err := createFiles(urlPath, path.Base(binaryPath), port, loggingEnabled)
 	if err != nil {
 		fmt.Println("Error creating files:")
 		fmt.Println(err)
