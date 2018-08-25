@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"flag"
 	"fmt"
 	"go/build"
@@ -14,61 +14,12 @@ import (
 
 const tmpPackageName = "as-builder"
 
-const mainGoTemplate = `package main
-
-import (
-	"log"
-	"net/http"
-
-	_ "./statik"
-	"github.com/rakyll/statik/fs"
-)
-
-func main() {
-	statikFS, err := fs.New()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	http.Handle("%s", http.StripPrefix("%s", http.FileServer(statikFS)))
-	http.ListenAndServe(":%d", nil)
-}
-`
-
 var debugEnabled = false
 
 func debug(log interface{}) {
 	if debugEnabled == true {
 		fmt.Println(log)
 	}
-}
-
-func main() {
-	errs := checkDependencies()
-	if len(errs) != 0 {
-		fmt.Println("Error: Dependencies not met:")
-		for _, err := range errs {
-			fmt.Println(err)
-		}
-		os.Exit(1)
-	}
-
-	assetsPath, binaryPath, urlPath, port := readFlags()
-
-	compilationDir, mainPath, err := createFiles(urlPath, port)
-	if err != nil {
-		fmt.Println("Error creating files:")
-		fmt.Println(err)
-		os.RemoveAll(compilationDir)
-		os.Exit(1)
-	}
-
-	if err = executeCompilation(compilationDir, mainPath, assetsPath, binaryPath); err != nil {
-		fmt.Println(err)
-		os.RemoveAll(compilationDir)
-		os.Exit(1)
-	}
-	debug("done")
 }
 
 func readFlags() (assetsPath, binaryPath, urlPath string, port int) {
@@ -116,13 +67,21 @@ func createFiles(urlPath string, port int) (string, string, error) {
 	}
 	debug("Compilation dir is " + compilationDir)
 
-	var qb bytes.Buffer
-	fmt.Fprintf(&qb, mainGoTemplate, urlPath, urlPath, port)
-
 	mainPath := filepath.Join(compilationDir, "main.go")
-	if err := ioutil.WriteFile(mainPath, qb.Bytes(), 0644); err != nil {
+	f, err := os.Create(mainPath)
+	if err != nil {
 		return "", "", err
 	}
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+
+	_, err = fmt.Fprintf(w, mainGoTemplate, urlPath, port)
+	if err != nil {
+		return "", "", err
+	}
+	w.Flush()
+
 	return compilationDir, mainPath, nil
 }
 

@@ -35,7 +35,8 @@ CMD ["/assets-server"]
 
 ## Installation
 
-`go get github.com/ubergesundheit/assets-server/cmd/as-builder`
+    go get -u github.com/rakyll/statik
+    go get -u github.com/ubergesundheit/assets-server/cmd/as-builder
 
 ## Usage:
 
