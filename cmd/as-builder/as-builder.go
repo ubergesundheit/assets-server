@@ -159,7 +159,7 @@ func executeCompilation(compilationDir, mainPath, assetsPath, outPath string) er
 		"-a", // rebuild all
 		"-o", outPath,
 		"-tags", "netgo", // use go network implementaton
-		"-ldflags", "-extldflags -static",
+		"-ldflags", "-s -w -extldflags -static",
 		mainPath,
 	}
 
