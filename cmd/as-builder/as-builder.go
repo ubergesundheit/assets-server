@@ -63,7 +63,6 @@ func createFiles() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println(etags)
 
 	serverGoFile, err := os.Create(filepath.Join(compilationDir, "server.go"))
 	if err != nil {

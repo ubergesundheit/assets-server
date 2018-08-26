@@ -60,7 +60,6 @@ func compressFiles(srcPath string) (string, error) {
 		}
 
 		// compute plain etag
-		fmt.Println(strings.TrimPrefix(path, srcPath))
 		_, err = etags.WriteString(computeEtag(originalFileBytes, relativePath))
 		if err != nil {
 			return err
