@@ -40,19 +40,44 @@ func createFiles() (string, error) {
 	}
 	debug("Compilation dir is " + compilationDir)
 
-	f, err := os.Create(filepath.Join(compilationDir, "main.go"))
+	mainGoFile, err := os.Create(filepath.Join(compilationDir, "main.go"))
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer mainGoFile.Close()
 
-	w := bufio.NewWriter(f)
+	mainGoWriter := bufio.NewWriter(mainGoFile)
 
-	_, err = fmt.Fprintf(w, mainGoTemplate, urlPath, port, path.Base(binaryPath), loggingEnabled)
+	_, err = fmt.Fprintf(mainGoWriter, mainGoTemplate, urlPath, port, path.Base(binaryPath))
 	if err != nil {
 		return "", err
 	}
-	w.Flush()
+	mainGoWriter.Flush()
+
+	// compress files
+	debug("copying assets")
+	tmpAssetsPath := filepath.Join(compilationDir, path.Base(assetsPath))
+	copy.Copy(assetsPath, tmpAssetsPath)
+	debug("compressing files")
+	etags, err := compressFiles(tmpAssetsPath)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println(etags)
+
+	serverGoFile, err := os.Create(filepath.Join(compilationDir, "server.go"))
+	if err != nil {
+		return "", err
+	}
+	defer serverGoFile.Close()
+
+	serverGoWriter := bufio.NewWriter(serverGoFile)
+
+	_, err = fmt.Fprintf(serverGoWriter, serverGoTemplate, loggingEnabled, etags)
+	if err != nil {
+		return "", err
+	}
+	serverGoWriter.Flush()
 
 	return compilationDir, nil
 }
@@ -70,15 +95,7 @@ func executeCompilation(compilationDir string) error {
 		return err
 	}
 
-	// compress files
-	tmpAssetsPath := filepath.Join(compilationDir, path.Base(assetsPath))
-	copy.Copy(assetsPath, tmpAssetsPath)
-	err = compressFiles(tmpAssetsPath)
-	if err != nil {
-		return err
-	}
-
-	statikArgs := []string{"-src", tmpAssetsPath, "-dest", compilationDir}
+	statikArgs := []string{"-src", filepath.Join(compilationDir, path.Base(assetsPath)), "-dest", compilationDir}
 	statikCmd := exec.Command(statikPath, statikArgs...)
 	statikCmd.Stdout = os.Stdout
 	statikCmd.Stderr = os.Stderr
@@ -94,6 +111,7 @@ func executeCompilation(compilationDir string) error {
 		"-tags", "netgo", // use go network implementaton
 		"-ldflags", "-s -w -extldflags -static",
 		compilationDir + "/main.go",
+		compilationDir + "/server.go",
 	}
 
 	command := exec.Command(goBinPath, buildArgs...)

@@ -3,12 +3,15 @@
 
 A tool to bundle a directory of files into a static HTTP server. Useful for serving html and js from Kubernetes Pods.
 
-Automatically adds .gz and .br compressed files and serves it to clients supporting gz or brotli thanks to https://github.com/lpar/gzipped.
+Automatically adds .gz and .br compressed files and serves it to clients supporting gz or brotli thanks to a modified version of https://github.com/lpar/gzipped.
 
 Uses
-- https://github.com/rakyll/statik
-- https://github.com/lpar/gzipped
-- https://github.com/google/brotli
+- github.com/rakyll/statik
+- github.com/lpar/gzipped
+- github.com/google/brotli/go/cbrotli
+- github.com/otiai10/copy
+- github.com/amalfra/etag
+- github.com/golang/gddo/httputil/header
 
 ## Use in a docker build stage
 
@@ -42,7 +45,7 @@ CMD ["/assets-server"]
 Although possible, using the container image is recommended.
 You'll need some build dependencies for brotli. (On Ubuntu: build-essential, cmake)
 
-    go get -u github.com/rakyll/statik github.com/lpar/gzipped github.com/otiai10/copy
+    go get -u github.com/rakyll/statik github.com/golang/gddo/httputil/header github.com/otiai10/copy github.com/amalfra/etag
     go get -u -d github.com/google/brotli/go/cbrotli
     cd $GOPATH/src/github.com/google/brotli
     mkdir out
