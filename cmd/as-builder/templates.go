@@ -199,7 +199,6 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// if etag, ok := etags[fPath]; ok {
 	if etag, ok := etags[fPathLoaded]; ok {
 		if found, ok := r.Header["If-None-Match"]; ok && found[0] == etag {
 			w.WriteHeader(http.StatusNotModified)

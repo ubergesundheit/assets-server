@@ -30,7 +30,7 @@ FROM quay.io/geraldpape/as-builder:latest as packer
 
 COPY --from=build /usr/src/app/build /assets
 
-RUN as-builder -debug -src /assets -dest /assets-server -port 8080 -url /
+RUN as-builder -logging -debug -src /assets -dest /assets-server -port 8080 -url /
 
 ## Final stage: Use static binary as small docker image
 FROM scratch
