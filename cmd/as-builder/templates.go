@@ -139,7 +139,10 @@ func (f *fileHandler) openAndStat(path string) (http.File, os.FileInfo, error) {
 	return file, info, nil
 }
 
+%[4]s
+
 func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// logging enabled?
 	if %[1]t {
 		defer func() {
 			remoteAddr := r.Header.Get("X-Forwarded-For")
@@ -156,6 +159,12 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = upath
 	}
 	fpath := path.Clean(upath)
+
+	// rewriting
+	if %[3]t {
+		fpath = findRewrite(fpath)
+	}
+
 	if strings.HasSuffix(fpath, "/") {
 		// maybe this needs to be set too? I don't know
 		// upath = upath + "index.html"
@@ -194,17 +203,13 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		// Doesn't exist compressed or uncompressed
-		http.NotFound(w, r)
+		// custom 404 page or default handler..
+		%[5]s
 		return
 	}
 	defer file.Close()
 
 	if etag, ok := etags[fPathLoaded]; ok {
-		if found, ok := r.Header["If-None-Match"]; ok && found[0] == etag {
-			w.WriteHeader(http.StatusNotModified)
-			return
-		}
-
 		w.Header().Set("Etag", etag)
 	}
 	w.Header().Set("Cache-Control", "public, max-age=86400")

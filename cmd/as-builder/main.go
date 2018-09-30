@@ -17,8 +17,11 @@ var (
 	port            int
 	loggingEnabled  bool
 	compressFormats string
+	rewriteParts    string
+	fourOhFourPath  string
 
 	extensionsToCompress []string
+	rewritePaths         *rewrites
 )
 
 func main() {
@@ -35,7 +38,12 @@ func execute() int {
 		return 1
 	}
 
-	readFlags()
+	err := readFlags()
+	if err != nil {
+		fmt.Println("Error parsing flags:")
+		fmt.Println(err)
+		return 1
+	}
 
 	compilationDir, err := createFiles()
 	if err != nil {
@@ -53,7 +61,7 @@ func execute() int {
 	return 0
 }
 
-func readFlags() {
+func readFlags() error {
 	const (
 		defaultAssetsPath = "./public"
 		defaultBinaryPath = "assets-server"
@@ -61,12 +69,16 @@ func readFlags() {
 		defaultDebug      = false
 		defaultLogging    = false
 		defaultCompress   = ".html,.htm,.css,.js,.svg,.json,.txt,.xml,.yml,.yaml,.kml,.csv,.tsv,.webmanifest,.vtt,.vcard,.vcf,.ttc,.ttf,.rdf,.otf,.appcache,.md,.mdown,.m3u,.m3u8"
+		defaultRewrites   = ""
+		default404path    = ""
 		assetsPathUsage   = "file path of the assets directory"
 		binaryPathUsage   = "file path of the resulting binary"
 		portUsage         = "TCP port from which the server will be reachable"
 		debugUsage        = "enable verbose debug messages"
 		loggingUsage      = "enable request logging for the server"
 		compressUsage     = "comma separated list of file extensions to compress. To completely disable compression specify an empty string"
+		rewritesUsage     = "comma separates list of colon separated tuples for internal rewriting requests (source:target)"
+		fourOhfourUsage   = "path to custom 404 page"
 	)
 	// src flag
 	flag.StringVar(&assetsPath, "src", defaultAssetsPath, assetsPathUsage)
@@ -80,8 +92,15 @@ func readFlags() {
 	flag.BoolVar(&loggingEnabled, "logging", defaultLogging, loggingUsage)
 	// compress flag
 	flag.StringVar(&compressFormats, "compress", defaultCompress, compressUsage)
-
-	extensionsToCompress = strings.Split(compressFormats, ",")
+	// rewrites flag
+	flag.StringVar(&rewriteParts, "rewrites", defaultRewrites, rewritesUsage)
+	// 404-path flag
+	flag.StringVar(&fourOhFourPath, "404-path", default404path, fourOhfourUsage)
 
 	flag.Parse()
+
+	extensionsToCompress = strings.Split(compressFormats, ",")
+	var err error
+	rewritePaths, err = initRewrites(rewriteParts)
+	return err
 }

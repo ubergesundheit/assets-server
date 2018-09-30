@@ -72,7 +72,13 @@ func createFiles() (string, error) {
 
 	serverGoWriter := bufio.NewWriter(serverGoFile)
 
-	_, err = fmt.Fprintf(serverGoWriter, serverGoTemplate, loggingEnabled, etags)
+	fourOhFourCode := "http.NotFound(w, r)"
+
+	if fourOhFourPath != "" {
+
+	}
+
+	_, err = fmt.Fprintf(serverGoWriter, serverGoTemplate, loggingEnabled, etags, rewriteParts != "", rewritePaths.String(), fourOhFourCode)
 	if err != nil {
 		return "", err
 	}
