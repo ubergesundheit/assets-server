@@ -21,11 +21,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	logger = log.New(os.Stdout, "%[3]s: ", log.LstdFlags)
-	logger.Printf("Starting %[3]s")
+	logger = log.New(os.Stdout, "%[2]s: ", log.LstdFlags)
+	logger.Printf("Starting %[2]s")
 
 	server := &http.Server{
-		Addr:         ":%[2]d",
+		Addr:         ":%[1]d",
 		Handler:      FileServer(statikFS),
 		ErrorLog:     logger,
 		ReadTimeout:  5 * time.Second,
@@ -38,25 +38,25 @@ func main() {
 
 	go func() {
 		<-quit
-		logger.Println("%[3]s is shutting down...")
+		logger.Println("%[2]s is shutting down...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		server.SetKeepAlivesEnabled(false)
 		if err := server.Shutdown(ctx); err != nil {
-			logger.Fatalf("Could not gracefully shutdown %[3]s: %%v\n", err)
+			logger.Fatalf("Could not gracefully shutdown %[2]s: %%v\n", err)
 		}
 		close(done)
 	}()
 
-	logger.Println("%[3]s is listening at :%[2]d")
+	logger.Println("%[2]s is listening at :%[1]d")
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Fatalf("Could not listen on :%[2]d: %%v\n", err)
+		logger.Fatalf("Could not listen on :%[1]d: %%v\n", err)
 	}
 
 	<-done
-	logger.Println("%[3]s stopped")
+	logger.Println("%[2]s stopped")
 }
 `
 

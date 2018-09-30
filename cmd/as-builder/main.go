@@ -57,14 +57,12 @@ func readFlags() {
 	const (
 		defaultAssetsPath = "./public"
 		defaultBinaryPath = "assets-server"
-		defaultURLPath    = "/"
 		defaultPort       = 8000
 		defaultDebug      = false
 		defaultLogging    = false
 		defaultCompress   = ".html,.htm,.css,.js,.svg,.json,.txt,.xml,.yml,.yaml,.kml,.csv,.tsv,.webmanifest,.vtt,.vcard,.vcf,.ttc,.ttf,.rdf,.otf,.appcache,.md,.mdown,.m3u,.m3u8"
 		assetsPathUsage   = "file path of the assets directory"
 		binaryPathUsage   = "file path of the resulting binary"
-		urlPathUsage      = "URL path for the server"
 		portUsage         = "TCP port from which the server will be reachable"
 		debugUsage        = "enable verbose debug messages"
 		loggingUsage      = "enable request logging for the server"
@@ -74,8 +72,6 @@ func readFlags() {
 	flag.StringVar(&assetsPath, "src", defaultAssetsPath, assetsPathUsage)
 	// output flag
 	flag.StringVar(&binaryPath, "dest", defaultBinaryPath, binaryPathUsage)
-	// url flag
-	flag.StringVar(&urlPath, "url", defaultURLPath, urlPathUsage)
 	// port flag
 	flag.IntVar(&port, "port", defaultPort, portUsage)
 	// debug flag

@@ -30,7 +30,7 @@ FROM quay.io/geraldpape/as-builder:latest as packer
 
 COPY --from=build /usr/src/app/build /assets
 
-RUN as-builder -logging -debug -src /assets -dest /assets-server -port 8080 -url /
+RUN as-builder -logging -debug -src /assets -dest /assets-server -port 8080
 
 ## Final stage: Use static binary as small docker image
 FROM scratch
@@ -73,6 +73,4 @@ Usage of as-builder:
     TCP port from which the server will be reachable (default 8000)
   -src string
     file path of the assets directory (default "./public")
-  -url string
-    URL path for the server (default "/")
 ```

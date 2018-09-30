@@ -48,7 +48,7 @@ func createFiles() (string, error) {
 
 	mainGoWriter := bufio.NewWriter(mainGoFile)
 
-	_, err = fmt.Fprintf(mainGoWriter, mainGoTemplate, urlPath, port, path.Base(binaryPath))
+	_, err = fmt.Fprintf(mainGoWriter, mainGoTemplate, port, path.Base(binaryPath))
 	if err != nil {
 		return "", err
 	}
