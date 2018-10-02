@@ -5,6 +5,8 @@ A tool to bundle a directory of files into a static HTTP server. Useful for serv
 
 Automatically adds .gz and .br compressed files and serves it to clients supporting gz or brotli thanks to a modified version of https://github.com/lpar/gzipped.
 
+The final binary can be further compressed with UPX.
+
 Uses
 - github.com/rakyll/statik
 - github.com/lpar/gzipped
@@ -12,6 +14,7 @@ Uses
 - github.com/otiai10/copy
 - github.com/amalfra/etag
 - github.com/golang/gddo/httputil/header
+- github.com/upx/upx
 
 ## Use in a docker build stage
 
@@ -31,6 +34,9 @@ FROM quay.io/geraldpape/as-builder:latest as packer
 COPY --from=build /usr/src/app/build /assets
 
 RUN as-builder -logging -debug -src /assets -dest /assets-server -port 8080
+
+RUN strip --strip-unneeded /assets-server
+RUN upx --best --ultra-brute /assets-server
 
 ## Final stage: Use static binary as small docker image
 FROM scratch
