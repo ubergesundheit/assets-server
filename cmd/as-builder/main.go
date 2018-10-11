@@ -100,7 +100,10 @@ func readFlags() error {
 	flag.Parse()
 
 	extensionsToCompress = strings.Split(compressFormats, ",")
-	var err error
-	rewritePaths, err = initRewrites(rewriteParts)
-	return err
+	if rewriteParts != "" {
+		var err error
+		rewritePaths, err = initRewrites(rewriteParts)
+		return err
+	}
+	return nil
 }

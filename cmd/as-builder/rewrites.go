@@ -17,11 +17,13 @@ type rewrites struct {
 func (r *rewrites) String() string {
 	str := "func findRewrite(from string) string {\n"
 
-	for _, matchTarget := range r.matchTargets {
-		strippedSlash := strings.TrimRight(matchTarget.pathToMatch, "/")
-		str +=
-			fmt.Sprintf("if from == \"%s\" || from == \"%s\" { return \"%s\" }\n",
-				matchTarget.pathToMatch, strippedSlash, matchTarget.target)
+	if r != nil {
+		for _, matchTarget := range r.matchTargets {
+			strippedSlash := strings.TrimRight(matchTarget.pathToMatch, "/")
+			str +=
+				fmt.Sprintf("if from == \"%s\" || from == \"%s\" { return \"%s\" }\n",
+					matchTarget.pathToMatch, strippedSlash, matchTarget.target)
+		}
 	}
 
 	str += "return from\n}\n"
