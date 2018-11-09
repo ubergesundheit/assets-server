@@ -166,9 +166,8 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.HasSuffix(fpath, "/") {
-		// maybe this needs to be set too? I don't know
-		// upath = upath + "index.html"
-		// r.URL.Path = upath
+		upath = upath + "index.html"
+		r.URL.Path = upath
 		fpath = fpath + "index.html"
 	}
 	// Try for a compressed version if appropriate
