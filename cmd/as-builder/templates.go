@@ -164,11 +164,14 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if %[3]t {
 		fpath = findRewrite(fpath)
 	}
-
 	if strings.HasSuffix(fpath, "/") {
 		upath = upath + "index.html"
 		r.URL.Path = upath
 		fpath = fpath + "index.html"
+	} else if strings.HasSuffix(upath, "/") {
+		upath = upath + "index.html"
+		r.URL.Path = upath
+		fpath = fpath + "/index.html"
 	}
 	// Try for a compressed version if appropriate
 	var file http.File
