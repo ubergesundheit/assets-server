@@ -217,7 +217,7 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(fpath, ".html") {
 		w.Header().Set("Cache-Control", "public, max-age=0, must-revalidate")
 	} else {
-		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Header().Set("Cache-Control", "public, max-age=31536000")
 	}
 	http.ServeContent(w, r, fpath, info.ModTime(), file)
 }
